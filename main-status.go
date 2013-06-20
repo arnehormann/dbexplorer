@@ -4,7 +4,7 @@ package main
 
 import (
 	"database/sql"
-	"local/github.com/arnehormann/dbexplorer"
+	"github.com/arnehormann/dbexplorer"
 	"os"
 	"strings"
 )
