@@ -1,4 +1,4 @@
 dbexplorer
 ==========
 
-Scan your database and create structs
+Scan your database and create code.
