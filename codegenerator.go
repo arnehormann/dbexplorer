@@ -215,7 +215,7 @@ func (v *~.Name~) bindTo(t []interface{}) (*~.Name~, []interface{}) {
 		t = make([]interface{}, ~.Cols|len~)
 	}~range $i, $e := .Cols~
 	t[~$i~] = &v.~$e.Goname~~end~
-	return &v
+	return v, t
 }
 
 func (v *~.Name~) BindTo(t []interface{}) (interface{}, []interface{}) {
