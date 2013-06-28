@@ -229,7 +229,6 @@ func (v *~.Name~) Query(~$args.Static.Declaration~) (string, []string) {
 `
 	templ, err := template.New(name).Delims("~", "~").Parse(structTemplate)
 	if err != nil {
-		fmt.Printf("\n===\n%s\n---\n%s\n===\n", structTemplate, err)
 		return err
 	}
 	sql, err := query.Sample()
@@ -242,7 +241,6 @@ func (v *~.Name~) Query(~$args.Static.Declaration~) (string, []string) {
 	}
 	resp, err := req.scan(db)
 	if err != nil {
-		fmt.Printf("\n===\n%#v\n---\n%#v\n===\n", resp, err)
 		return err
 	}
 	cols := make([]Column, len(resp.columns))
