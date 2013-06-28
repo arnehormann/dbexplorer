@@ -1,91 +1,266 @@
 package dbexplorer
 
 import (
-	"bytes"
 	"database/sql"
 	"fmt"
 	"github.com/arnehormann/sqlinternals/mysqlinternals"
 	"io"
+	"reflect"
+	"regexp"
+	"strings"
 	"text/template"
 )
 
-func Generate(writer io.Writer, db *sql.DB, name, query string, args ...interface{}) error {
-	type column struct {
-		Name    string
-		Type    string
-		Tags    string
-		Comment string
-	}
-	const structTemplate = `
-type ~.Name~ struct {~range $i, $e := .Cols~
-	~$e.Name~ ~$e.Type~~if $e.Tags~ ~$e.Tags~~end~ // ~$e.Comment~~end~
+type Query []interface{}
+
+func SQL(parts ...interface{}) Query {
+	return Query(parts)
 }
 
-func (q *~.Name~) ScanInto(t []interface{}) interface{} {
-	v := ~.Name~{}~range $i, $e := .Cols~
-	t[~$i~] = &v.~$e.Name~~end~
+type Column struct {
+	mysqlinternals.Column
+}
+
+type Arg struct {
+	// argument name
+	Name string
+	// argument value for sample query
+	Sample string
+	// argument to prepared statement (true) or static identifier (false)?
+	Dynamic bool
+	// argument should be quoted
+	Quoted bool
+	// argument type (string by default)
+	Type reflect.Type
+	// alternatives
+	ValueType string
+	Values    map[string]interface{}
+	// description
+	Comment string
+}
+
+type Arglist []*Arg
+
+func (q Query) Sample() (string, error) {
+	sql := ""
+	for i, part := range q {
+		switch v := part.(type) {
+		case string:
+			sql += v
+		case *Arg:
+			if v.Sample == "" {
+				return sql, fmt.Errorf("argument %d has no Sample set", i)
+			}
+			if v.Quoted {
+				sql += fmt.Sprintf("%q", v.Sample)
+			} else {
+				sql += v.Sample
+			}
+		default:
+			return sql, fmt.Errorf("'%v' is not string or *Arg", part)
+		}
+	}
+	return sql, nil
+}
+
+func (q Query) Args() Arglist {
+	args := Arglist{}
+	for _, part := range q {
+		switch v := part.(type) {
+		case *Arg:
+			args = append(args, v)
+		}
+	}
+	return args
+}
+
+func (a Arglist) Dynamic() Arglist {
+	args := Arglist{}
+	for _, arg := range a {
+		if arg.Dynamic {
+			args = append(args, arg)
+		}
+	}
+	return args
+}
+
+func (a Arglist) Static() Arglist {
+	args := Arglist{}
+	for _, arg := range a {
+		if !arg.Dynamic {
+			args = append(args, arg)
+		}
+	}
+	return args
+}
+
+func (a Arglist) Declaration() string {
+	if len(a) == 0 {
+		return ""
+	}
+	var stringType = reflect.TypeOf("")
+	var lastType reflect.Type = nil
+	list := ""
+	for _, arg := range a {
+		switch {
+		case arg.Type == lastType,
+			arg.Type == nil && lastType == stringType,
+			arg.Type == stringType && lastType == nil:
+			// skip
+		default:
+			t := arg.Type
+			if t == nil {
+				t = stringType
+			}
+			list += " " + arg.Type.String()
+		}
+		list += ", " + arg.Name
+		lastType = arg.Type
+	}
+	if lastType == nil {
+		lastType = stringType
+	}
+	return list[2:] + lastType.String()
+}
+
+func (a Arglist) QuotedNames() string {
+	if len(a) == 0 {
+		return ""
+	}
+	names := ""
+	for _, arg := range a {
+		names += ", " + fmt.Sprintf("%q", arg.Name)
+	}
+	return names[2:]
+}
+
+// this may break with bad quoting, but the user can influence the breakage
+// and it's not at runtime so there's little risk
+func (q Query) String() string {
+	type staticArg struct {
+		pos  int
+		name string
+	}
+	query := `"`
+	for _, part := range q {
+		switch v := part.(type) {
+		case string:
+			query += v
+		case *Arg:
+			switch {
+			case v.Dynamic && v.Quoted:
+				query += `'?'`
+			case v.Dynamic && !v.Quoted:
+				query += `?`
+			default:
+				query += `" + ` + v.Name + ` + "`
+			}
+		}
+	}
+	query += `"`
+	return query
+}
+
+func (a *Arg) String() string {
+	return a.Name
+}
+
+var gonameregexp *regexp.Regexp
+
+func init() {
+	r, err := regexp.Compile("[^A-Za-z0-9]*")
+	if err != nil {
+		panic(err)
+	}
+	gonameregexp = r
+}
+
+func (c Column) Goname() string {
+	name := gonameregexp.ReplaceAllString(c.Name(), "")
+	return strings.Title(name)
+}
+
+var gotagger = strings.NewReplacer(` `, "_", `:`, "_", `"`, "'")
+
+func (c Column) Declaration() (string, error) {
+	name := c.Name()
+	goType, err := c.ReflectGoType()
+	if err != nil {
+		return "", err
+	}
+	var sqlType string
+	if c.MysqlParameters() == mysqlinternals.ParamMustLength {
+		sqlType, err = c.MysqlDeclaration(255) // should be varchar mostly
+	} else {
+		sqlType, err = c.MysqlDeclaration()
+	}
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s %s `mysql:\"name=%s,type=%s\"`",
+		c.Goname(), goType, gotagger.Replace(name), gotagger.Replace(sqlType)), nil
+}
+
+func generate(writer io.Writer, db *sql.DB, name string, query Query) error {
+	const structTemplate = `~$args := .Query.Args~
+type ~.Name~ struct {~range $i, $e := .Cols~
+	~$e.Declaration~~end~
+}
+
+func (v *~.Name~) bindTo(t []interface{}) (*~.Name~, []interface{}) {
+	if v == nil {
+		v := &~.Name~{}
+	}
+	if len(t) != ~.Cols|len~ {
+		t = make([]interface{}, ~.Cols|len~)
+	}~range $i, $e := .Cols~
+	t[~$i~] = &v.~$e.Goname~~end~
 	return &v
 }
 
-func (q *~.Name~) Query() (string, []string) {
-	return ~.Query | printf "%q"~, []string{~range $i, $e := .QueryArgs~~$e | printf "%q,"~~end~}
+func (v *~.Name~) BindTo(t []interface{}) (interface{}, []interface{}) {
+	return v.bindTo(t)
+}
+
+func (v *~.Name~) Query(~$args.Static.Declaration~) (string, []string) {
+	return ~.Query~, []string{~$args.Dynamic.QuotedNames~}
 }
 
 `
+	templ, err := template.New(name).Delims("~", "~").Parse(structTemplate)
+	if err != nil {
+		fmt.Printf("\n===\n%s\n---\n%s\n===\n", structTemplate, err)
+		return err
+	}
+	sql, err := query.Sample()
+	if err != nil {
+		return err
+	}
 	req := &request{
-		feeder:    func(t []interface{}) interface{} { return nil },
-		query:     query,
-		queryArgs: args,
+		feeder: func(t []interface{}) interface{} { return nil },
+		query:  sql,
 	}
 	resp, err := req.scan(db)
 	if err != nil {
+		fmt.Printf("\n===\n%#v\n---\n%#v\n===\n", resp, err)
 		return err
 	}
-	templ, err := template.New(name).Delims("~", "~").Parse(structTemplate)
-	if err != nil {
-		return err
-	}
-	cols := make([]column, len(resp.columns))
-	queryArgsFmt := ""
+	cols := make([]Column, len(resp.columns))
 	for i, c := range resp.columns {
-		goType, err := c.ReflectGoType()
-		if err != nil {
-			return err
-		}
-		var sqlType string
-		if c.MysqlParameters() == mysqlinternals.ParamMustLength {
-			sqlType, err = c.MysqlDeclaration(255) // should be varchar mostly
-		} else {
-			sqlType, err = c.MysqlDeclaration()
-		}
-		if err != nil {
-			return err
-		}
-		cols[i] = column{
-			Name:    c.Name(),
-			Type:    goType.String(),
-			Comment: sqlType,
-		}
-		if i == 0 {
-			queryArgsFmt += "%q"
-		} else {
-			queryArgsFmt += ",%q"
-		}
+		cols[i] = Column{c}
 	}
 	return templ.Execute(writer, struct {
-		Name      string
-		Query     string
-		QueryArgs []interface{}
-		Cols      []column
+		Name  string
+		Query Query
+		Cols  []Column
 	}{
-		Name:      name,
-		Query:     query,
-		QueryArgs: args,
-		Cols:      cols,
+		Name:  name,
+		Query: query,
+		Cols:  cols,
 	})
 }
 
-func GenerateAll(writer io.Writer, db *sql.DB, pkg string, queries, args map[string]string) error {
+func Generate(writer io.Writer, db *sql.DB, pkg string, queries map[string]Query) error {
 	const baseTemplate = `// this file is generated, do not edit it!
 
 package %s
@@ -107,19 +282,9 @@ var (
 	if err != nil {
 		return err
 	}
-	buffer := bytes.NewBuffer(nil)
 	for name, query := range queries {
-		buffer.Reset()
-		tmpl, err := template.New(name).Parse(query)
-		if err != nil {
-			return err
-		}
-		err = tmpl.Execute(buffer, args)
-		if err != nil {
-			return err
-		}
 		// consider arguments
-		err = Generate(writer, db, name, buffer.String())
+		err = generate(writer, db, name, query)
 		if err != nil {
 			return err
 		}

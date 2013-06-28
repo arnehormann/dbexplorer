@@ -4,48 +4,71 @@ package main
 
 import (
 	"database/sql"
-	"github.com/arnehormann/dbexplorer"
+	dbe "github.com/arnehormann/dbexplorer"
 	"os"
 	"strings"
 )
 
-var args = map[string]string{
-	"schema": "mysql",
-	"table":  "user",
-	"user":   "root",
-	"host":   "localhost",
-}
-
-var queries = map[string]string{
-	"CharacterSet":    "SHOW CHARACTER SET",
-	"Collation":       "SHOW COLLATION",
-	"Engine":          "SHOW ENGINES",
-	"Privilege":       "SHOW PRIVILEGES",
-	"BinaryLog":       "SHOW BINARY LOGS",
-	"InnodbStatus":    "SHOW ENGINE INNODB STATUS",
-	"InnodbMutex":     "SHOW ENGINE INNODB MUTEX",
-	"Process":         "SHOW PROCESSLIST",
-	"MasterStatus":    "SHOW MASTER STATUS",
-	"SlaveHost":       "SHOW SLAVE HOSTS",
-	"SlaveStatus":     "SHOW SLAVE STATUS",
-	"GlobalStatus":    "SHOW GLOBAL STATUS",
-	"GlobalVariable":  "SHOW GLOBAL VARIABLES",
-	"SessionStatus":   "SHOW SESSION STATUS",
-	"SessionVariable": "SHOW SESSION VARIABLES",
-	"Warning":         "SHOW WARNINGS",
-	"Error":           "SHOW ERRORS",
-	"Schema":          "SHOW SCHEMAS",
-	"OpenTable":       "SHOW OPEN TABLES",
-	"Trigger":         "SHOW TRIGGERS FROM `{{.schema}}`",
-	"TableStatus":     "SHOW TABLE STATUS FROM `{{.schema}}`",
-	"Column":          "SHOW COLUMNS FROM `{{.schema}}`.`{{.table}}`",
-	"Index":           "SHOW INDEXES FROM `{{.schema}}`.`{{.table}}`",
-	"Grant":           `SHOW GRANTS FOR "{{.user}}"@"{{.host}}"`,
-	// these don't exist in a vanilla db, would have to create them first
-	//"View":        "SHOW CREATE VIEW `{{.schema}}`.`{{.view}}`",
-	//"CreateFunction":  "SHOW CREATE FUNCTION `{{.schema}}.{{.function}}`",
-	//"CreateProcedure": "SHOW CREATE PROCEDURE `{{.schema}}.{{.procedure}}`",
-}
+var (
+	argSchema = &dbe.Arg{
+		Name:   "schema",
+		Sample: "mysql",
+	}
+	argTable = &dbe.Arg{
+		Name:   "table",
+		Sample: "user",
+	}
+	argUser = &dbe.Arg{
+		Name:    "user",
+		Sample:  "root",
+		Dynamic: true,
+		Quoted:  true,
+	}
+	argHost = &dbe.Arg{
+		Name:    "host",
+		Sample:  "localhost",
+		Dynamic: true,
+		Quoted:  true,
+	}
+	argStatus = &dbe.Arg{
+		Name:      "scope",
+		Sample:    "SESSION STATUS",
+		ValueType: "scope",
+		Values: map[string]interface{}{
+			"SessionStatus":    "SESSION STATUS",
+			"SessionVariables": "SESSION VARIABLES",
+			"GlobalStatus":     "GLOBAL STATUS",
+			"GlobalVariables":  "GLOBAL VARIABLES",
+		},
+	}
+	queries = map[string]dbe.Query{
+		//"BinaryLog":    dbe.SQL("SHOW BINARY LOGS"),
+		"CharacterSet": dbe.SQL("SHOW CHARACTER SET"),
+		"Collation":    dbe.SQL("SHOW COLLATION"),
+		"Column":       dbe.SQL("SHOW COLUMNS FROM `", argSchema, "`.`", argTable, "`"),
+		"Engine":       dbe.SQL("SHOW ENGINES"),
+		"Error":        dbe.SQL("SHOW ERRORS"),
+		"Grant":        dbe.SQL("SHOW GRANTS FOR ", argUser, "@", argHost),
+		"Index":        dbe.SQL("SHOW INDEXES FROM `", argSchema, "`.`", argTable, "`"),
+		"InnodbMutex":  dbe.SQL("SHOW ENGINE INNODB MUTEX"),
+		"InnodbStatus": dbe.SQL("SHOW ENGINE INNODB STATUS"),
+		"MasterStatus": dbe.SQL("SHOW MASTER STATUS"),
+		"OpenTable":    dbe.SQL("SHOW OPEN TABLES"),
+		"Privilege":    dbe.SQL("SHOW PRIVILEGES"),
+		"Process":      dbe.SQL("SHOW PROCESSLIST"),
+		"Schema":       dbe.SQL("SHOW SCHEMAS"),
+		"SlaveHost":    dbe.SQL("SHOW SLAVE HOSTS"),
+		"SlaveStatus":  dbe.SQL("SHOW SLAVE STATUS"),
+		"TableStatus":  dbe.SQL("SHOW TABLE STATUS FROM `", argSchema, "`"),
+		"Trigger":      dbe.SQL("SHOW TRIGGERS FROM `", argSchema, "`"),
+		"Variables":    dbe.SQL("SHOW ", argStatus),
+		"Warning":      dbe.SQL("SHOW WARNINGS"),
+		// these don't exist in a vanilla db, would have to create them first
+		//"View":        dbe.SQL("SHOW CREATE VIEW `{{.schema}}`.`{{.view}}`"),
+		//"CreateFunction":  dbe.SQL("SHOW CREATE FUNCTION `{{.schema}}.{{.function}}`"),
+		//"CreateProcedure": dbe.SQL("SHOW CREATE PROCEDURE `{{.schema}}.{{.procedure}}`"),
+	}
+)
 
 func main() {
 	dsn := os.Getenv("MYSQL_DSN")
@@ -56,18 +79,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	args := map[string]string{
-		"schema": "mysql",
-		"table":  "user",
-		"user":   "root",
-		"host":   "localhost",
-	}
 	dir, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
 	currentDir := strings.Split(dir, string(os.PathSeparator))
-	err = dbexplorer.GenerateAll(os.Stdout, db, currentDir[len(currentDir)-1], queries, args)
+	err = dbe.Generate(os.Stdout, db, currentDir[len(currentDir)-1], queries)
 	if err != nil {
 		panic(err)
 	}
