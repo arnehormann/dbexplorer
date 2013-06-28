@@ -41,32 +41,38 @@ var (
 			"GlobalVariables":  "GLOBAL VARIABLES",
 		},
 	}
-	queries = map[string]dbe.Query{
-		//"BinaryLog":    dbe.SQL("SHOW BINARY LOGS"),
-		"CharacterSet": dbe.SQL("SHOW CHARACTER SET"),
-		"Collation":    dbe.SQL("SHOW COLLATION"),
-		"Column":       dbe.SQL("SHOW COLUMNS FROM `", argSchema, "`.`", argTable, "`"),
-		"Engine":       dbe.SQL("SHOW ENGINES"),
-		"Error":        dbe.SQL("SHOW ERRORS"),
-		"Grant":        dbe.SQL("SHOW GRANTS FOR ", argUser, "@", argHost),
-		"Index":        dbe.SQL("SHOW INDEXES FROM `", argSchema, "`.`", argTable, "`"),
-		"InnodbMutex":  dbe.SQL("SHOW ENGINE INNODB MUTEX"),
-		"InnodbStatus": dbe.SQL("SHOW ENGINE INNODB STATUS"),
-		"MasterStatus": dbe.SQL("SHOW MASTER STATUS"),
-		"OpenTable":    dbe.SQL("SHOW OPEN TABLES"),
-		"Privilege":    dbe.SQL("SHOW PRIVILEGES"),
-		"Process":      dbe.SQL("SHOW PROCESSLIST"),
-		"Schema":       dbe.SQL("SHOW SCHEMAS"),
-		"SlaveHost":    dbe.SQL("SHOW SLAVE HOSTS"),
-		"SlaveStatus":  dbe.SQL("SHOW SLAVE STATUS"),
-		"TableStatus":  dbe.SQL("SHOW TABLE STATUS FROM `", argSchema, "`"),
-		"Trigger":      dbe.SQL("SHOW TRIGGERS FROM `", argSchema, "`"),
-		"Variables":    dbe.SQL("SHOW ", argStatus),
-		"Warning":      dbe.SQL("SHOW WARNINGS"),
+	queries = []dbe.Query{
+		dbe.SQL("CharacterSet", "SHOW CHARACTER SET"),
+		dbe.SQL("Collation", "SHOW COLLATION"),
+		dbe.SQL("Column", "SHOW COLUMNS FROM `", argSchema, "`.`", argTable, "`"),
+		dbe.SQL("Engine", "SHOW ENGINES"),
+		dbe.SQL("Error", "SHOW ERRORS"),
+		dbe.SQL("Grant", "SHOW GRANTS FOR ", argUser, "@", argHost),
+		dbe.SQL("Index", "SHOW INDEXES FROM `", argSchema, "`.`", argTable, "`"),
+		dbe.SQL("InnodbMutex", "SHOW ENGINE INNODB MUTEX"),
+		dbe.SQL("InnodbStatus", "SHOW ENGINE INNODB STATUS"),
+		dbe.SQL("MasterStatus", "SHOW MASTER STATUS"),
+		dbe.SQL("OpenTable", "SHOW OPEN TABLES"),
+		dbe.SQL("Privilege", "SHOW PRIVILEGES"),
+		dbe.SQL("Process", "SHOW PROCESSLIST"),
+		dbe.SQL("Schema", "SHOW SCHEMAS"),
+		dbe.SQL("SlaveHost", "SHOW SLAVE HOSTS"),
+		dbe.SQL("SlaveStatus", "SHOW SLAVE STATUS"),
+		dbe.SQL("TableStatus", "SHOW TABLE STATUS FROM `", argSchema, "`"),
+		dbe.SQL("Trigger", "SHOW TRIGGERS FROM `", argSchema, "`"),
+		dbe.SQL("Variables", "SHOW ", argStatus),
+		dbe.SQL("Warning", "SHOW WARNINGS"),
+
+		// disabled in my system
+		//dbe.SQL("BinaryLog", "SHOW BINARY LOGS"),
+
+		// provided by TABLE STATUS
+		//dbe.SQL("CreateTable", "SHOW CREATE TABLE `", argSchema, "`.`", argTable, "`"),
+
 		// these don't exist in a vanilla db, would have to create them first
-		//"View":        dbe.SQL("SHOW CREATE VIEW `{{.schema}}`.`{{.view}}`"),
-		//"CreateFunction":  dbe.SQL("SHOW CREATE FUNCTION `{{.schema}}.{{.function}}`"),
-		//"CreateProcedure": dbe.SQL("SHOW CREATE PROCEDURE `{{.schema}}.{{.procedure}}`"),
+		//dbe.SQL("CreateFunction", "SHOW CREATE FUNCTION `{{.schema}}.{{.function}}`"),
+		//dbe.SQL("CreateProcedure", "SHOW CREATE PROCEDURE `{{.schema}}.{{.procedure}}`"),
+		//dbe.SQL("CreateView", "SHOW CREATE VIEW `{{.schema}}`.`{{.view}}`"),
 	}
 )
 
@@ -84,7 +90,7 @@ func main() {
 		panic(err)
 	}
 	currentDir := strings.Split(dir, string(os.PathSeparator))
-	err = dbe.Generate(os.Stdout, db, currentDir[len(currentDir)-1], queries)
+	err = dbe.Generate(os.Stdout, db, currentDir[len(currentDir)-1], queries...)
 	if err != nil {
 		panic(err)
 	}

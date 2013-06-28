@@ -13,11 +13,11 @@ import (
 
 type Query []interface{}
 
-func SQL(parts ...interface{}) Query {
-	return Query(parts)
+func SQL(structName string, parts ...interface{}) Query {
+	return Query(append([]interface{}{structName}, parts...))
 }
 
-type Column struct {
+type TemplateColumn struct {
 	mysqlinternals.Column
 }
 
@@ -41,9 +41,16 @@ type Arg struct {
 
 type Arglist []*Arg
 
+func (q Query) StructName() string {
+	if name, ok := q[0].(string); ok {
+		return name
+	}
+	return ""
+}
+
 func (q Query) Sample() (string, error) {
 	sql := ""
-	for i, part := range q {
+	for i, part := range q[1:] {
 		switch v := part.(type) {
 		case string:
 			sql += v
@@ -99,28 +106,30 @@ func (a Arglist) Declaration() string {
 		return ""
 	}
 	var stringType = reflect.TypeOf("")
-	var lastType reflect.Type = nil
+	var lastType reflect.Type = stringType
 	list := ""
 	for _, arg := range a {
-		switch {
-		case arg.Type == lastType,
-			arg.Type == nil && lastType == stringType,
-			arg.Type == stringType && lastType == nil:
+		atype := arg.Type
+		if atype == nil {
+			atype = stringType
+		}
+		switch atype {
+		case lastType:
 			// skip
 		default:
-			t := arg.Type
+			t := atype
 			if t == nil {
 				t = stringType
 			}
-			list += " " + arg.Type.String()
+			list += " " + atype.String()
 		}
 		list += ", " + arg.Name
-		lastType = arg.Type
+		lastType = atype
 	}
 	if lastType == nil {
 		lastType = stringType
 	}
-	return list[2:] + lastType.String()
+	return list[2:] + " " + lastType.String()
 }
 
 func (a Arglist) QuotedNames() string {
@@ -142,7 +151,8 @@ func (q Query) String() string {
 		name string
 	}
 	query := `"`
-	for _, part := range q {
+	argMap := make(map[string]int)
+	for _, part := range q[1:] {
 		switch v := part.(type) {
 		case string:
 			query += v
@@ -153,7 +163,12 @@ func (q Query) String() string {
 			case v.Dynamic && !v.Quoted:
 				query += `?`
 			default:
-				query += `" + ` + v.Name + ` + "`
+				idx, ok := argMap[v.Name]
+				if !ok {
+					idx = len(argMap)
+					argMap[v.Name] = idx
+				}
+				query += fmt.Sprintf(`" + location[%d] + "`, idx)
 			}
 		}
 	}
@@ -175,15 +190,14 @@ func init() {
 	gonameregexp = r
 }
 
-func (c Column) Goname() string {
+func (c TemplateColumn) Goname() string {
 	name := gonameregexp.ReplaceAllString(c.Name(), "")
 	return strings.Title(name)
 }
 
 var gotagger = strings.NewReplacer(` `, "_", `:`, "_", `"`, "'")
 
-func (c Column) Declaration() (string, error) {
-	name := c.Name()
+func (c TemplateColumn) Declaration() (string, error) {
 	goType, err := c.ReflectGoType()
 	if err != nil {
 		return "", err
@@ -197,11 +211,10 @@ func (c Column) Declaration() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s %s `mysql:\"name=%s,type=%s\"`",
-		c.Goname(), goType, gotagger.Replace(name), gotagger.Replace(sqlType)), nil
+	return fmt.Sprintf("%s %s // %s", c.Goname(), goType, sqlType), nil
 }
 
-func generate(writer io.Writer, db *sql.DB, name string, query Query) error {
+func generate(writer io.Writer, db *sql.DB, query Query) error {
 	const structTemplate = `~$args := .Query.Args~
 type ~.Name~ struct {~range $i, $e := .Cols~
 	~$e.Declaration~~end~
@@ -209,7 +222,7 @@ type ~.Name~ struct {~range $i, $e := .Cols~
 
 func (v *~.Name~) bindTo(t []interface{}) (*~.Name~, []interface{}) {
 	if v == nil {
-		v := &~.Name~{}
+		v = &~.Name~{}
 	}
 	if len(t) != ~.Cols|len~ {
 		t = make([]interface{}, ~.Cols|len~)
@@ -218,15 +231,34 @@ func (v *~.Name~) bindTo(t []interface{}) (*~.Name~, []interface{}) {
 	return v, t
 }
 
-func (v *~.Name~) BindTo(t []interface{}) (interface{}, []interface{}) {
+func (v *~.Name~) BindTo(t []interface{}) (Bindable, []interface{}) {
 	return v.bindTo(t)
 }
 
-func (v *~.Name~) Query(~$args.Static.Declaration~) (string, []string) {
+func (v *~.Name~) Columns() []string {
+	return []string{~range $i, $e := .Cols~
+		~printf "%q" $e.Name~,~end~
+	}
+}
+
+func (v *~.Name~) copy() *~.Name~ {
+	if v == nil {
+		return nil
+	}
+	return &(*v)
+}
+
+func (v *~.Name~) Copy() Bindable {
+	return v.copy()
+}
+
+~$statics := $args.Static~~if $statics~// location is: ~$statics.Declaration~
+~end~func (v *~.Name~) Query(location...string) (string, []string) {
 	return ~.Query~, []string{~$args.Dynamic.QuotedNames~}
 }
 
 `
+	name := query.StructName()
 	templ, err := template.New(name).Delims("~", "~").Parse(structTemplate)
 	if err != nil {
 		return err
@@ -243,14 +275,14 @@ func (v *~.Name~) Query(~$args.Static.Declaration~) (string, []string) {
 	if err != nil {
 		return err
 	}
-	cols := make([]Column, len(resp.columns))
+	cols := make([]TemplateColumn, len(resp.columns))
 	for i, c := range resp.columns {
-		cols[i] = Column{c}
+		cols[i] = TemplateColumn{c}
 	}
 	return templ.Execute(writer, struct {
 		Name  string
 		Query Query
-		Cols  []Column
+		Cols  []TemplateColumn
 	}{
 		Name:  name,
 		Query: query,
@@ -258,7 +290,7 @@ func (v *~.Name~) Query(~$args.Static.Declaration~) (string, []string) {
 	})
 }
 
-func Generate(writer io.Writer, db *sql.DB, pkg string, queries map[string]Query) error {
+func Generate(writer io.Writer, db *sql.DB, pkg string, queries ...Query) error {
 	const baseTemplate = `// this file is generated, do not edit it!
 
 package %s
@@ -275,14 +307,22 @@ var (
 	_ = mysql.NullTime{}
 	_ = sql.NullString{}
 )
+
+type Bindable interface {
+	BindTo(t []interface{}) (Bindable, []interface{})
+	Columns() []string
+	Copy() Bindable
+	Query(location...string) (string, []string)
+}
+
 `
 	_, err := fmt.Fprintf(writer, baseTemplate, pkg)
 	if err != nil {
 		return err
 	}
-	for name, query := range queries {
+	for _, query := range queries {
 		// consider arguments
-		err = generate(writer, db, name, query)
+		err = generate(writer, db, query)
 		if err != nil {
 			return err
 		}
