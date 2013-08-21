@@ -1,4 +1,4 @@
-package dbexplorer
+package generator
 
 import (
 	"database/sql"

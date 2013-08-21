@@ -1,4 +1,4 @@
-package dbexplorer
+package generator
 
 import (
 	"database/sql"
@@ -11,41 +11,59 @@ import (
 	"text/template"
 )
 
+// store names of generated structs (Arg.Name, Arg.ValueType)
+type marker map[string]struct{}
+
+// Query represents a Query a struct should be generated for.
+// It contains the name of the struct to be created as its first argument.
+// The name may be followed by an optional map[int]string to override
+// field names of the respective column indices.
+// Following that are parts of the SQL (string) and Arg or *Arg (parameters).
 type Query []interface{}
 
+// SQL provides a simple routine to create a Query
 func SQL(structName string, parts ...interface{}) Query {
 	return Query(append([]interface{}{structName}, parts...))
 }
 
+// TemplateColumn contains all available information for a
+// column retrievable from a mysql response.
+// nameOverride is filled with the name to use if the one provided by MySQL
+// should not be used
 type TemplateColumn struct {
 	mysqlinternals.Column
+	nameOverride string
 }
 
+// Arg represents an argument in a MySQL query
 type Arg struct {
 	// argument name
 	Name string
 	// argument value for sample query
 	Sample string
-	// argument to prepared statement (true) or static identifier (false)?
+	// Dynamic arguments become "?" in the query and are provided at runtime.
+	// Static arguments are identifiers and have to be known at query construction time
+	// (e.g. table and schema name)
 	Dynamic bool
 	// argument should be quoted
 	Quoted bool
 	// argument type (string by default)
 	Type reflect.Type
 	// alternatives
-	ValueType string
+	ValueType interface{}
 	Values    map[string]interface{}
 	// description
 	Comment string
 }
 
+type Tags string
+
+// Arglist represents a sequence of arguments
 type Arglist []*Arg
 
-func (q Query) StructName() string {
-	if name, ok := q[0].(string); ok {
-		return name
-	}
-	return ""
+func (q Query) StructName() (name string, ok bool) {
+	name, ok = q[0].(string)
+	return
 }
 
 func (q Query) Sample() (string, error) {
@@ -63,8 +81,10 @@ func (q Query) Sample() (string, error) {
 			} else {
 				sql += v.Sample
 			}
+		case map[interface{}]string, map[int]string:
+			// ignore, it's an override map for column names (from int or string)
 		default:
-			return sql, fmt.Errorf("'%v' is not string or *Arg", part)
+			return sql, fmt.Errorf("type %T of argument %d is not supported", part, i)
 		}
 	}
 	return sql, nil
@@ -168,12 +188,21 @@ func (q Query) String() string {
 					idx = len(argMap)
 					argMap[v.Name] = idx
 				}
-				query += fmt.Sprintf(`" + location[%d] + "`, idx)
+				query += fmt.Sprintf(`" + %s + "`, v.Name)
 			}
 		}
 	}
 	query += `"`
 	return query
+}
+
+func (q Query) Overrides() map[int]string {
+	for _, v := range q[1:] {
+		if m, ok := v.(map[int]string); ok {
+			return m
+		}
+	}
+	return map[int]string{}
 }
 
 func (a *Arg) String() string {
@@ -190,57 +219,65 @@ func init() {
 	gonameregexp = r
 }
 
+func (c TemplateColumn) Name() string {
+	name := c.Column.Name()
+	if c.nameOverride != "" {
+		name = c.nameOverride
+	}
+	return name
+}
+
 func (c TemplateColumn) Goname() string {
-	name := gonameregexp.ReplaceAllString(c.Name(), "")
-	return strings.Title(name)
+	return strings.Title(gonameregexp.ReplaceAllString(c.Name(), ""))
 }
 
 var gotagger = strings.NewReplacer(` `, "_", `:`, "_", `"`, "'")
 
-func (c TemplateColumn) Declaration() (string, error) {
-	goType, err := c.ReflectGoType()
-	if err != nil {
-		return "", err
-	}
+func (c TemplateColumn) Declaration() (decl string, err error) {
 	var sqlType string
-	if c.MysqlParameters() == mysqlinternals.ParamMustLength {
-		sqlType, err = c.MysqlDeclaration(255) // should be varchar mostly
-	} else {
+	switch c.MysqlParameters() {
+	case mysqlinternals.ParamOneOrMore:
+		sqlType = "#ENUM/SET#"
+	case mysqlinternals.ParamMustLength:
+		// should be varchar mostly
+		sqlType, err = c.MysqlDeclaration(255)
+	default:
 		sqlType, err = c.MysqlDeclaration()
 	}
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s %s // %s", c.Goname(), goType, sqlType), nil
+	name := c.Name()
+	if c.nameOverride != "" {
+		name = "#" + c.nameOverride + "#"
+	}
+	postfix := fmt.Sprintf("`mysqlname:%q mysqltype:%q`", name, sqlType)
+	goSafeType, err := c.ReflectSqlType(false)
+	if err != nil {
+		return "", err
+	}
+	var comment string
+	if goType, err := c.ReflectGoType(); err == nil && goType != goSafeType {
+		comment = " // should fit into " + goType.String()
+	}
+	return fmt.Sprintf("%s %s %s %s", c.Goname(), goSafeType, postfix, comment), nil
 }
 
-func generate(writer io.Writer, db *sql.DB, query Query) error {
-	const structTemplate = `~$args := .Query.Args~
+func (mark *marker) generate(writer io.Writer, db *sql.DB, query Query) error {
+	const structTemplate = `~$args := .Query.Args~~$statics := $args.Static~~$dynamics := $args.Dynamic~~$declaration := $statics.Declaration~
 type ~.Name~ struct {~range $i, $e := .Cols~
 	~$e.Declaration~~end~
 }
 
-func (v *~.Name~) bindTo(t []interface{}) (*~.Name~, []interface{}) {
-	if v == nil {
-		v = &~.Name~{}
-	}
-	if len(t) != ~.Cols|len~ {
-		t = make([]interface{}, ~.Cols|len~)
-	}~range $i, $e := .Cols~
-	t[~$i~] = &v.~$e.Goname~~end~
-	return v, t
+// bind returns a slice of all columns for a ~.Name~ to use it with Scan.
+// Bind only one ~.Name~ and copy it every row after calling Scan.
+func (v *~.Name~) Bind() (cols []interface{}) {
+	return []interface{}{
+	~range $i, $e := .Cols~&v.~$e.Goname~,
+	~end~}
 }
 
-func (v *~.Name~) BindTo(t []interface{}) (Bindable, []interface{}) {
-	return v.bindTo(t)
-}
-
-func (v *~.Name~) Columns() []string {
-	return []string{~range $i, $e := .Cols~
-		~printf "%q" $e.Name~,~end~
-	}
-}
-
+// copy returns a shallow copy of the ~.Name~.
 func (v *~.Name~) copy() *~.Name~ {
 	if v == nil {
 		return nil
@@ -248,17 +285,38 @@ func (v *~.Name~) copy() *~.Name~ {
 	return &(*v)
 }
 
+// Copy returns a shallow copy of the ~.Name~.
 func (v *~.Name~) Copy() Bindable {
 	return v.copy()
 }
-
-~$statics := $args.Static~~if $statics~// location is: ~$statics.Declaration~
-~end~func (v *~.Name~) Query(location...string) (string, []string) {
-	return ~.Query~, []string{~$args.Dynamic.QuotedNames~}
+~if $statics~
+// query provides sql metadata used to query for ~.Name~.
+// It returns the SQL string and the arguments needed for prepared statements.
+func (v *~.Name~) query(~$statics.Declaration~) (sql string, args []string) {
+	return ~.Query~, []string{~$dynamics.QuotedNames~}
+}
+~end~
+// Query provides sql metadata used to query for ~.Name~.
+// It returns the SQL string and the arguments needed for prepared statements.
+~if $statics~// Query panics if location is not ~$declaration~.~else~// Query panics if arguments are given.~end~
+func (v *~.Name~) Query(location...string) (sql string, args []string) {
+	if len(location) != ~$statics|len~ {
+		panic("Query must be called ~if $declaration~with arguments (~$declaration~)~else~without arguments~end~")
+	}~if $statics~
+	return v.query(~range $i, $e := $statics~~if $i~, ~end~location[~$i~]~end~)~else~
+	return ~.Query~, []string{~$dynamics.QuotedNames~}~end~
 }
 
 `
-	name := query.StructName()
+	name, ok := query.StructName()
+	if !ok {
+		return fmt.Errorf("No struct name in query %#v", query)
+	}
+	_, known := (*mark)[name]
+	if known {
+		return fmt.Errorf("Type %s was already declared", name)
+	}
+	(*mark)[name] = struct{}{}
 	templ, err := template.New(name).Delims("~", "~").Parse(structTemplate)
 	if err != nil {
 		return err
@@ -275,9 +333,14 @@ func (v *~.Name~) Copy() Bindable {
 	if err != nil {
 		return err
 	}
+	overrides := query.Overrides()
 	cols := make([]TemplateColumn, len(resp.columns))
 	for i, c := range resp.columns {
-		cols[i] = TemplateColumn{c}
+		// TODO: consider overrides here
+		cols[i] = TemplateColumn{Column: c}
+		if v, ok := overrides[i]; ok {
+			cols[i].nameOverride = v
+		}
 	}
 	return templ.Execute(writer, struct {
 		Name  string
@@ -309,20 +372,20 @@ var (
 )
 
 type Bindable interface {
-	BindTo(t []interface{}) (Bindable, []interface{})
-	Columns() []string
+	Bind() (cols []interface{})
 	Copy() Bindable
-	Query(location...string) (string, []string)
+	Query(location...string) (sql string, args []string)
 }
 
 `
+	mark := make(marker)
 	_, err := fmt.Fprintf(writer, baseTemplate, pkg)
 	if err != nil {
 		return err
 	}
 	for _, query := range queries {
 		// consider arguments
-		err = generate(writer, db, query)
+		err = (&mark).generate(writer, db, query)
 		if err != nil {
 			return err
 		}
