@@ -16,9 +16,7 @@ type TemplateColumn struct {
 	nameOverride string
 }
 
-var (
-	gonameregexp *regexp.Regexp
-)
+var gonameregexp *regexp.Regexp
 
 func init() {
 	r, err := regexp.Compile("[^A-Za-z0-9]*")

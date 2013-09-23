@@ -45,7 +45,8 @@ func (v *~.Name~) copy() *~.Name~ {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the ~.Name~.
