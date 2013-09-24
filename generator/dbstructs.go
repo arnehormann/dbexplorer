@@ -80,7 +80,7 @@ var (
 func main() {
 	dsn := os.Getenv("MYSQL_DSN")
 	if dsn == "" {
-		dsn = "root@tcp(localhost:3306)/?charset=utf8mb4,utf8&parseTime=false"
+		dsn = "root@tcp(localhost:3306)/?parseTime=false"
 	}
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {

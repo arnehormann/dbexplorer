@@ -1,8 +1,8 @@
 package generator
 
 import (
-	"fmt"
 	"reflect"
+	"strconv"
 )
 
 // Arg represents an argument in a MySQL query
@@ -86,7 +86,7 @@ func (a Arglist) QuotedNames() string {
 	}
 	names := ""
 	for _, arg := range a {
-		names += ", " + fmt.Sprintf("%q", arg.Name)
+		names += ", " + strconv.Quote(arg.Name)
 	}
 	return names[2:]
 }

@@ -32,11 +32,11 @@ type ~.Name~ struct {~range $i, $e := .Cols~
 	~$e.Declaration~~end~
 }
 
-// bind returns a slice of all columns for a ~.Name~ to use it with Scan.
+// Bind returns a slice of all columns for a ~.Name~ to use it with Scan.
 // Bind only one ~.Name~ and copy it every row after calling Scan.
 func (v *~.Name~) Bind() (cols []interface{}) {
 	return []interface{}{
-	~range $i, $e := .Cols~&v.~$e.Goname~,
+	~range $i, $e := .Cols~	&v.~$e.Goname~,
 	~end~}
 }
 
@@ -57,7 +57,7 @@ func (v *~.Name~) Copy() Bindable {
 // query provides sql metadata used to query for ~.Name~.
 // It returns the SQL string and the arguments needed for prepared statements.
 func (v *~.Name~) query(~$statics.Declaration~) (sql string, args []string) {
-	return ~.Query~, []string{~$dynamics.QuotedNames~}
+	return ~.Query~, ~if $dynamics~[]string{~$dynamics.QuotedNames~}~else~nil~end~
 }
 ~end~
 // Query provides sql metadata used to query for ~.Name~.
@@ -68,7 +68,7 @@ func (v *~.Name~) Query(location...string) (sql string, args []string) {
 		panic("Query must be called ~if $declaration~with arguments (~$declaration~)~else~without arguments~end~")
 	}~if $statics~
 	return v.query(~range $i, $e := $statics~~if $i~, ~end~location[~$i~]~end~)~else~
-	return ~.Query~, []string{~$dynamics.QuotedNames~}~end~
+	return ~.Query~, ~if $dynamics~[]string{~$dynamics.QuotedNames~}~else~nil~end~~end~
 }
 
 `

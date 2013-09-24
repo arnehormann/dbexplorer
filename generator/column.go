@@ -61,9 +61,5 @@ func (c TemplateColumn) Declaration() (decl string, err error) {
 	if err != nil {
 		return "", err
 	}
-	var comment string
-	if goType, err := c.ReflectGoType(); err == nil && goType != goSafeType {
-		comment = " // should fit into " + goType.String()
-	}
-	return fmt.Sprintf("%s %s %s %s", c.Goname(), goSafeType, postfix, comment), nil
+	return fmt.Sprintf("%s %s %s", c.Goname(), goSafeType, postfix), nil
 }

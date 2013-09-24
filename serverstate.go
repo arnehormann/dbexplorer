@@ -1,6 +1,6 @@
 // this file is generated, do not edit it!
 
-package dbexplorer
+package main
 
 import (
 	"database/sql"
@@ -28,7 +28,7 @@ type CharacterSet struct {
 	Maxlen           int64  `mysqlname:"Maxlen" mysqltype:"BIGINT NOT NULL"`
 }
 
-// bind returns a slice of all columns for a CharacterSet to use it with Scan.
+// Bind returns a slice of all columns for a CharacterSet to use it with Scan.
 // Bind only one CharacterSet and copy it every row after calling Scan.
 func (v *CharacterSet) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -44,7 +44,8 @@ func (v *CharacterSet) copy() *CharacterSet {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the CharacterSet.
@@ -59,7 +60,7 @@ func (v *CharacterSet) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW CHARACTER SET", []string{}
+	return "SHOW CHARACTER SET", nil
 }
 
 type Collation struct {
@@ -71,7 +72,7 @@ type Collation struct {
 	Sortlen   int64  `mysqlname:"Sortlen" mysqltype:"BIGINT NOT NULL"`
 }
 
-// bind returns a slice of all columns for a Collation to use it with Scan.
+// Bind returns a slice of all columns for a Collation to use it with Scan.
 // Bind only one Collation and copy it every row after calling Scan.
 func (v *Collation) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -89,7 +90,8 @@ func (v *Collation) copy() *Collation {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the Collation.
@@ -104,19 +106,19 @@ func (v *Collation) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW COLLATION", []string{}
+	return "SHOW COLLATION", nil
 }
 
 type Engine struct {
 	Engine       string         `mysqlname:"Engine" mysqltype:"VARCHAR(255) NOT NULL"`
 	Support      string         `mysqlname:"Support" mysqltype:"VARCHAR(255) NOT NULL"`
 	Comment      string         `mysqlname:"Comment" mysqltype:"VARCHAR(255) NOT NULL"`
-	Transactions sql.NullString `mysqlname:"Transactions" mysqltype:"VARCHAR(255)"` // should fit into string
-	XA           sql.NullString `mysqlname:"XA" mysqltype:"VARCHAR(255)"`           // should fit into string
-	Savepoints   sql.NullString `mysqlname:"Savepoints" mysqltype:"VARCHAR(255)"`   // should fit into string
+	Transactions sql.NullString `mysqlname:"Transactions" mysqltype:"VARCHAR(255)"`
+	XA           sql.NullString `mysqlname:"XA" mysqltype:"VARCHAR(255)"`
+	Savepoints   sql.NullString `mysqlname:"Savepoints" mysqltype:"VARCHAR(255)"`
 }
 
-// bind returns a slice of all columns for a Engine to use it with Scan.
+// Bind returns a slice of all columns for a Engine to use it with Scan.
 // Bind only one Engine and copy it every row after calling Scan.
 func (v *Engine) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -134,7 +136,8 @@ func (v *Engine) copy() *Engine {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the Engine.
@@ -149,7 +152,7 @@ func (v *Engine) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW ENGINES", []string{}
+	return "SHOW ENGINES", nil
 }
 
 type Privilege struct {
@@ -158,7 +161,7 @@ type Privilege struct {
 	Comment   string `mysqlname:"Comment" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a Privilege to use it with Scan.
+// Bind returns a slice of all columns for a Privilege to use it with Scan.
 // Bind only one Privilege and copy it every row after calling Scan.
 func (v *Privilege) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -173,7 +176,8 @@ func (v *Privilege) copy() *Privilege {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the Privilege.
@@ -188,14 +192,14 @@ func (v *Privilege) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW PRIVILEGES", []string{}
+	return "SHOW PRIVILEGES", nil
 }
 
 type Grant struct {
 	Grant string `mysqlname:"#Grant#" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a Grant to use it with Scan.
+// Bind returns a slice of all columns for a Grant to use it with Scan.
 // Bind only one Grant and copy it every row after calling Scan.
 func (v *Grant) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -208,7 +212,8 @@ func (v *Grant) copy() *Grant {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the Grant.
@@ -230,7 +235,7 @@ type Schema struct {
 	Database string `mysqlname:"Database" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a Schema to use it with Scan.
+// Bind returns a slice of all columns for a Schema to use it with Scan.
 // Bind only one Schema and copy it every row after calling Scan.
 func (v *Schema) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -243,7 +248,8 @@ func (v *Schema) copy() *Schema {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the Schema.
@@ -258,31 +264,31 @@ func (v *Schema) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW SCHEMAS", []string{}
+	return "SHOW SCHEMAS", nil
 }
 
 type TableStatus struct {
 	Name          string         `mysqlname:"Name" mysqltype:"VARCHAR(255) NOT NULL"`
-	Engine        sql.NullString `mysqlname:"Engine" mysqltype:"VARCHAR(255)"`             // should fit into string
-	Version       sql.NullInt64  `mysqlname:"Version" mysqltype:"BIGINT UNSIGNED"`         // should fit into uint64
-	Rowformat     sql.NullString `mysqlname:"Row_format" mysqltype:"VARCHAR(255)"`         // should fit into string
-	Rows          sql.NullInt64  `mysqlname:"Rows" mysqltype:"BIGINT UNSIGNED"`            // should fit into uint64
-	Avgrowlength  sql.NullInt64  `mysqlname:"Avg_row_length" mysqltype:"BIGINT UNSIGNED"`  // should fit into uint64
-	Datalength    sql.NullInt64  `mysqlname:"Data_length" mysqltype:"BIGINT UNSIGNED"`     // should fit into uint64
-	Maxdatalength sql.NullInt64  `mysqlname:"Max_data_length" mysqltype:"BIGINT UNSIGNED"` // should fit into uint64
-	Indexlength   sql.NullInt64  `mysqlname:"Index_length" mysqltype:"BIGINT UNSIGNED"`    // should fit into uint64
-	Datafree      sql.NullInt64  `mysqlname:"Data_free" mysqltype:"BIGINT UNSIGNED"`       // should fit into uint64
-	Autoincrement sql.NullInt64  `mysqlname:"Auto_increment" mysqltype:"BIGINT UNSIGNED"`  // should fit into uint64
-	Createtime    mysql.NullTime `mysqlname:"Create_time" mysqltype:"DATETIME"`            // should fit into time.Time
-	Updatetime    mysql.NullTime `mysqlname:"Update_time" mysqltype:"DATETIME"`            // should fit into time.Time
-	Checktime     mysql.NullTime `mysqlname:"Check_time" mysqltype:"DATETIME"`             // should fit into time.Time
-	Collation     sql.NullString `mysqlname:"Collation" mysqltype:"VARCHAR(255)"`          // should fit into string
-	Checksum      sql.NullInt64  `mysqlname:"Checksum" mysqltype:"BIGINT UNSIGNED"`        // should fit into uint64
-	Createoptions sql.NullString `mysqlname:"Create_options" mysqltype:"VARCHAR(255)"`     // should fit into string
+	Engine        sql.NullString `mysqlname:"Engine" mysqltype:"VARCHAR(255)"`
+	Version       sql.NullInt64  `mysqlname:"Version" mysqltype:"BIGINT UNSIGNED"`
+	Rowformat     sql.NullString `mysqlname:"Row_format" mysqltype:"VARCHAR(255)"`
+	Rows          sql.NullInt64  `mysqlname:"Rows" mysqltype:"BIGINT UNSIGNED"`
+	Avgrowlength  sql.NullInt64  `mysqlname:"Avg_row_length" mysqltype:"BIGINT UNSIGNED"`
+	Datalength    sql.NullInt64  `mysqlname:"Data_length" mysqltype:"BIGINT UNSIGNED"`
+	Maxdatalength sql.NullInt64  `mysqlname:"Max_data_length" mysqltype:"BIGINT UNSIGNED"`
+	Indexlength   sql.NullInt64  `mysqlname:"Index_length" mysqltype:"BIGINT UNSIGNED"`
+	Datafree      sql.NullInt64  `mysqlname:"Data_free" mysqltype:"BIGINT UNSIGNED"`
+	Autoincrement sql.NullInt64  `mysqlname:"Auto_increment" mysqltype:"BIGINT UNSIGNED"`
+	Createtime    mysql.NullTime `mysqlname:"Create_time" mysqltype:"DATETIME"`
+	Updatetime    mysql.NullTime `mysqlname:"Update_time" mysqltype:"DATETIME"`
+	Checktime     mysql.NullTime `mysqlname:"Check_time" mysqltype:"DATETIME"`
+	Collation     sql.NullString `mysqlname:"Collation" mysqltype:"VARCHAR(255)"`
+	Checksum      sql.NullInt64  `mysqlname:"Checksum" mysqltype:"BIGINT UNSIGNED"`
+	Createoptions sql.NullString `mysqlname:"Create_options" mysqltype:"VARCHAR(255)"`
 	Comment       string         `mysqlname:"Comment" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a TableStatus to use it with Scan.
+// Bind returns a slice of all columns for a TableStatus to use it with Scan.
 // Bind only one TableStatus and copy it every row after calling Scan.
 func (v *TableStatus) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -312,7 +318,8 @@ func (v *TableStatus) copy() *TableStatus {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the TableStatus.
@@ -323,7 +330,7 @@ func (v *TableStatus) Copy() Bindable {
 // query provides sql metadata used to query for TableStatus.
 // It returns the SQL string and the arguments needed for prepared statements.
 func (v *TableStatus) query(schema string) (sql string, args []string) {
-	return "SHOW TABLE STATUS FROM `" + schema + "`", []string{}
+	return "SHOW TABLE STATUS FROM `" + schema + "`", nil
 }
 
 // Query provides sql metadata used to query for TableStatus.
@@ -345,7 +352,7 @@ type Column struct {
 	Extra   string  `mysqlname:"Extra" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a Column to use it with Scan.
+// Bind returns a slice of all columns for a Column to use it with Scan.
 // Bind only one Column and copy it every row after calling Scan.
 func (v *Column) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -363,7 +370,8 @@ func (v *Column) copy() *Column {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the Column.
@@ -374,7 +382,7 @@ func (v *Column) Copy() Bindable {
 // query provides sql metadata used to query for Column.
 // It returns the SQL string and the arguments needed for prepared statements.
 func (v *Column) query(schema, table string) (sql string, args []string) {
-	return "SHOW COLUMNS FROM `" + schema + "`.`" + table + "`", []string{}
+	return "SHOW COLUMNS FROM `" + schema + "`.`" + table + "`", nil
 }
 
 // Query provides sql metadata used to query for Column.
@@ -393,17 +401,17 @@ type Index struct {
 	Keyname      string         `mysqlname:"Key_name" mysqltype:"VARCHAR(255) NOT NULL"`
 	Seqinindex   int64          `mysqlname:"Seq_in_index" mysqltype:"BIGINT NOT NULL"`
 	Columnname   string         `mysqlname:"Column_name" mysqltype:"VARCHAR(255) NOT NULL"`
-	Collation    sql.NullString `mysqlname:"Collation" mysqltype:"VARCHAR(255)"` // should fit into string
-	Cardinality  sql.NullInt64  `mysqlname:"Cardinality" mysqltype:"BIGINT"`     // should fit into int64
-	Subpart      sql.NullInt64  `mysqlname:"Sub_part" mysqltype:"BIGINT"`        // should fit into int64
-	Packed       sql.NullString `mysqlname:"Packed" mysqltype:"VARCHAR(255)"`    // should fit into string
+	Collation    sql.NullString `mysqlname:"Collation" mysqltype:"VARCHAR(255)"`
+	Cardinality  sql.NullInt64  `mysqlname:"Cardinality" mysqltype:"BIGINT"`
+	Subpart      sql.NullInt64  `mysqlname:"Sub_part" mysqltype:"BIGINT"`
+	Packed       sql.NullString `mysqlname:"Packed" mysqltype:"VARCHAR(255)"`
 	Null         string         `mysqlname:"Null" mysqltype:"VARCHAR(255) NOT NULL"`
 	Indextype    string         `mysqlname:"Index_type" mysqltype:"VARCHAR(255) NOT NULL"`
-	Comment      sql.NullString `mysqlname:"Comment" mysqltype:"VARCHAR(255)"` // should fit into string
+	Comment      sql.NullString `mysqlname:"Comment" mysqltype:"VARCHAR(255)"`
 	Indexcomment string         `mysqlname:"Index_comment" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a Index to use it with Scan.
+// Bind returns a slice of all columns for a Index to use it with Scan.
 // Bind only one Index and copy it every row after calling Scan.
 func (v *Index) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -428,7 +436,8 @@ func (v *Index) copy() *Index {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the Index.
@@ -439,7 +448,7 @@ func (v *Index) Copy() Bindable {
 // query provides sql metadata used to query for Index.
 // It returns the SQL string and the arguments needed for prepared statements.
 func (v *Index) query(schema, table string) (sql string, args []string) {
-	return "SHOW INDEXES FROM `" + schema + "`.`" + table + "`", []string{}
+	return "SHOW INDEXES FROM `" + schema + "`.`" + table + "`", nil
 }
 
 // Query provides sql metadata used to query for Index.
@@ -454,10 +463,10 @@ func (v *Index) Query(location ...string) (sql string, args []string) {
 
 type SessionStatus struct {
 	Variablename string         `mysqlname:"Variable_name" mysqltype:"VARCHAR(255) NOT NULL"`
-	Value        sql.NullString `mysqlname:"Value" mysqltype:"VARCHAR(255)"` // should fit into string
+	Value        sql.NullString `mysqlname:"Value" mysqltype:"VARCHAR(255)"`
 }
 
-// bind returns a slice of all columns for a SessionStatus to use it with Scan.
+// Bind returns a slice of all columns for a SessionStatus to use it with Scan.
 // Bind only one SessionStatus and copy it every row after calling Scan.
 func (v *SessionStatus) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -471,7 +480,8 @@ func (v *SessionStatus) copy() *SessionStatus {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the SessionStatus.
@@ -486,15 +496,15 @@ func (v *SessionStatus) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW SESSION STATUS", []string{}
+	return "SHOW SESSION STATUS", nil
 }
 
 type SessionVariables struct {
 	Variablename string         `mysqlname:"Variable_name" mysqltype:"VARCHAR(255) NOT NULL"`
-	Value        sql.NullString `mysqlname:"Value" mysqltype:"VARCHAR(255)"` // should fit into string
+	Value        sql.NullString `mysqlname:"Value" mysqltype:"VARCHAR(255)"`
 }
 
-// bind returns a slice of all columns for a SessionVariables to use it with Scan.
+// Bind returns a slice of all columns for a SessionVariables to use it with Scan.
 // Bind only one SessionVariables and copy it every row after calling Scan.
 func (v *SessionVariables) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -508,7 +518,8 @@ func (v *SessionVariables) copy() *SessionVariables {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the SessionVariables.
@@ -523,15 +534,15 @@ func (v *SessionVariables) Query(location ...string) (sql string, args []string)
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW SESSION VARIABLES", []string{}
+	return "SHOW SESSION VARIABLES", nil
 }
 
 type GlobalStatus struct {
 	Variablename string         `mysqlname:"Variable_name" mysqltype:"VARCHAR(255) NOT NULL"`
-	Value        sql.NullString `mysqlname:"Value" mysqltype:"VARCHAR(255)"` // should fit into string
+	Value        sql.NullString `mysqlname:"Value" mysqltype:"VARCHAR(255)"`
 }
 
-// bind returns a slice of all columns for a GlobalStatus to use it with Scan.
+// Bind returns a slice of all columns for a GlobalStatus to use it with Scan.
 // Bind only one GlobalStatus and copy it every row after calling Scan.
 func (v *GlobalStatus) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -545,7 +556,8 @@ func (v *GlobalStatus) copy() *GlobalStatus {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the GlobalStatus.
@@ -560,15 +572,15 @@ func (v *GlobalStatus) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW GLOBAL STATUS", []string{}
+	return "SHOW GLOBAL STATUS", nil
 }
 
 type GlobalVariables struct {
 	Variablename string         `mysqlname:"Variable_name" mysqltype:"VARCHAR(255) NOT NULL"`
-	Value        sql.NullString `mysqlname:"Value" mysqltype:"VARCHAR(255)"` // should fit into string
+	Value        sql.NullString `mysqlname:"Value" mysqltype:"VARCHAR(255)"`
 }
 
-// bind returns a slice of all columns for a GlobalVariables to use it with Scan.
+// Bind returns a slice of all columns for a GlobalVariables to use it with Scan.
 // Bind only one GlobalVariables and copy it every row after calling Scan.
 func (v *GlobalVariables) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -582,7 +594,8 @@ func (v *GlobalVariables) copy() *GlobalVariables {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the GlobalVariables.
@@ -597,7 +610,7 @@ func (v *GlobalVariables) Query(location ...string) (sql string, args []string) 
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW GLOBAL VARIABLES", []string{}
+	return "SHOW GLOBAL VARIABLES", nil
 }
 
 type Error struct {
@@ -606,7 +619,7 @@ type Error struct {
 	Message string `mysqlname:"Message" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a Error to use it with Scan.
+// Bind returns a slice of all columns for a Error to use it with Scan.
 // Bind only one Error and copy it every row after calling Scan.
 func (v *Error) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -621,7 +634,8 @@ func (v *Error) copy() *Error {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the Error.
@@ -636,7 +650,7 @@ func (v *Error) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW ERRORS", []string{}
+	return "SHOW ERRORS", nil
 }
 
 type Warning struct {
@@ -645,7 +659,7 @@ type Warning struct {
 	Message string `mysqlname:"Message" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a Warning to use it with Scan.
+// Bind returns a slice of all columns for a Warning to use it with Scan.
 // Bind only one Warning and copy it every row after calling Scan.
 func (v *Warning) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -660,7 +674,8 @@ func (v *Warning) copy() *Warning {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the Warning.
@@ -675,7 +690,7 @@ func (v *Warning) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW WARNINGS", []string{}
+	return "SHOW WARNINGS", nil
 }
 
 type InnodbMutex struct {
@@ -684,7 +699,7 @@ type InnodbMutex struct {
 	Status string `mysqlname:"Status" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a InnodbMutex to use it with Scan.
+// Bind returns a slice of all columns for a InnodbMutex to use it with Scan.
 // Bind only one InnodbMutex and copy it every row after calling Scan.
 func (v *InnodbMutex) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -699,7 +714,8 @@ func (v *InnodbMutex) copy() *InnodbMutex {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the InnodbMutex.
@@ -714,7 +730,7 @@ func (v *InnodbMutex) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW ENGINE INNODB MUTEX", []string{}
+	return "SHOW ENGINE INNODB MUTEX", nil
 }
 
 type InnodbStatus struct {
@@ -723,7 +739,7 @@ type InnodbStatus struct {
 	Status string `mysqlname:"Status" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a InnodbStatus to use it with Scan.
+// Bind returns a slice of all columns for a InnodbStatus to use it with Scan.
 // Bind only one InnodbStatus and copy it every row after calling Scan.
 func (v *InnodbStatus) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -738,7 +754,8 @@ func (v *InnodbStatus) copy() *InnodbStatus {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the InnodbStatus.
@@ -753,7 +770,7 @@ func (v *InnodbStatus) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW ENGINE INNODB STATUS", []string{}
+	return "SHOW ENGINE INNODB STATUS", nil
 }
 
 type OpenTable struct {
@@ -763,7 +780,7 @@ type OpenTable struct {
 	Namelocked int64  `mysqlname:"Name_locked" mysqltype:"BIGINT NOT NULL"`
 }
 
-// bind returns a slice of all columns for a OpenTable to use it with Scan.
+// Bind returns a slice of all columns for a OpenTable to use it with Scan.
 // Bind only one OpenTable and copy it every row after calling Scan.
 func (v *OpenTable) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -779,7 +796,8 @@ func (v *OpenTable) copy() *OpenTable {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the OpenTable.
@@ -794,21 +812,21 @@ func (v *OpenTable) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW OPEN TABLES", []string{}
+	return "SHOW OPEN TABLES", nil
 }
 
 type Process struct {
 	Id      int64          `mysqlname:"Id" mysqltype:"BIGINT NOT NULL"`
 	User    string         `mysqlname:"User" mysqltype:"VARCHAR(255) NOT NULL"`
 	Host    string         `mysqlname:"Host" mysqltype:"VARCHAR(255) NOT NULL"`
-	Db      sql.NullString `mysqlname:"db" mysqltype:"VARCHAR(255)"` // should fit into string
+	Db      sql.NullString `mysqlname:"db" mysqltype:"VARCHAR(255)"`
 	Command string         `mysqlname:"Command" mysqltype:"VARCHAR(255) NOT NULL"`
 	Time    int32          `mysqlname:"Time" mysqltype:"INT NOT NULL"`
-	State   sql.NullString `mysqlname:"State" mysqltype:"VARCHAR(255)"` // should fit into string
-	Info    sql.NullString `mysqlname:"Info" mysqltype:"VARCHAR(255)"`  // should fit into string
+	State   sql.NullString `mysqlname:"State" mysqltype:"VARCHAR(255)"`
+	Info    sql.NullString `mysqlname:"Info" mysqltype:"VARCHAR(255)"`
 }
 
-// bind returns a slice of all columns for a Process to use it with Scan.
+// Bind returns a slice of all columns for a Process to use it with Scan.
 // Bind only one Process and copy it every row after calling Scan.
 func (v *Process) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -828,7 +846,8 @@ func (v *Process) copy() *Process {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the Process.
@@ -843,7 +862,7 @@ func (v *Process) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW PROCESSLIST", []string{}
+	return "SHOW PROCESSLIST", nil
 }
 
 type MasterStatus struct {
@@ -854,7 +873,7 @@ type MasterStatus struct {
 	ExecutedGtidSet string `mysqlname:"Executed_Gtid_Set" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a MasterStatus to use it with Scan.
+// Bind returns a slice of all columns for a MasterStatus to use it with Scan.
 // Bind only one MasterStatus and copy it every row after calling Scan.
 func (v *MasterStatus) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -871,7 +890,8 @@ func (v *MasterStatus) copy() *MasterStatus {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the MasterStatus.
@@ -886,7 +906,7 @@ func (v *MasterStatus) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW MASTER STATUS", []string{}
+	return "SHOW MASTER STATUS", nil
 }
 
 type SlaveHost struct {
@@ -897,7 +917,7 @@ type SlaveHost struct {
 	SlaveUUID string `mysqlname:"Slave_UUID" mysqltype:"VARCHAR(255) NOT NULL"`
 }
 
-// bind returns a slice of all columns for a SlaveHost to use it with Scan.
+// Bind returns a slice of all columns for a SlaveHost to use it with Scan.
 // Bind only one SlaveHost and copy it every row after calling Scan.
 func (v *SlaveHost) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -914,7 +934,8 @@ func (v *SlaveHost) copy() *SlaveHost {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the SlaveHost.
@@ -929,7 +950,7 @@ func (v *SlaveHost) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW SLAVE HOSTS", []string{}
+	return "SHOW SLAVE HOSTS", nil
 }
 
 type SlaveStatus struct {
@@ -989,7 +1010,7 @@ type SlaveStatus struct {
 	AutoPosition              uint32 `mysqlname:"Auto_Position" mysqltype:"INT UNSIGNED NOT NULL"`
 }
 
-// bind returns a slice of all columns for a SlaveStatus to use it with Scan.
+// Bind returns a slice of all columns for a SlaveStatus to use it with Scan.
 // Bind only one SlaveStatus and copy it every row after calling Scan.
 func (v *SlaveStatus) Bind() (cols []interface{}) {
 	return []interface{}{
@@ -1055,7 +1076,8 @@ func (v *SlaveStatus) copy() *SlaveStatus {
 	if v == nil {
 		return nil
 	}
-	return &(*v)
+	w := *v
+	return &w
 }
 
 // Copy returns a shallow copy of the SlaveStatus.
@@ -1070,5 +1092,5 @@ func (v *SlaveStatus) Query(location ...string) (sql string, args []string) {
 	if len(location) != 0 {
 		panic("Query must be called without arguments")
 	}
-	return "SHOW SLAVE STATUS", []string{}
+	return "SHOW SLAVE STATUS", nil
 }
