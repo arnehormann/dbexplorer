@@ -14,26 +14,38 @@ import (
 )
 
 var (
+	// default arguments for variable identifiers that can not be transported
+	// by `?` wildcards:
+
+	// schema
 	argSchema = &gen.Arg{
 		Name:   "schema",
 		Sample: "mysql",
 	}
+
+	// table
 	argTable = &gen.Arg{
 		Name:   "table",
 		Sample: "user",
 	}
+
+	// user
 	argUser = &gen.Arg{
 		Name:    "user",
 		Sample:  "root",
 		Dynamic: true,
 		Quoted:  true,
 	}
+
+	// host
 	argHost = &gen.Arg{
 		Name:    "host",
 		Sample:  "localhost",
 		Dynamic: true,
 		Quoted:  true,
 	}
+
+	// struct name followed by query (which may be assembled from comma separated parts)
 	queries = []gen.Query{
 		// static information
 		gen.SQL("CharacterSet", "SHOW CHARACTER SET"),
@@ -42,6 +54,7 @@ var (
 		gen.SQL("Privilege", "SHOW PRIVILEGES"),
 
 		// database structure
+		// the map argument indicates a renamed field - it is dynamic in Columns and we want to force a name
 		gen.SQL("Grant", map[int]string{0: "Grant"}, "SHOW GRANTS FOR ", argUser, "@", argHost),
 		gen.SQL("Schema", "SHOW SCHEMAS"),
 		gen.SQL("TableStatus", "SHOW TABLE STATUS FROM `", argSchema, "`"),
