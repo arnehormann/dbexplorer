@@ -2,9 +2,10 @@ package generator
 
 import (
 	"fmt"
-	"github.com/arnehormann/sqlinternals/mysqlinternals"
 	"regexp"
 	"strings"
+
+	"github.com/arnehormann/sqlinternals/mysqlinternals"
 )
 
 // TemplateColumn contains all available information for a
@@ -12,19 +13,15 @@ import (
 // nameOverride is filled with the name to use if the one provided by MySQL
 // should not be used
 type TemplateColumn struct {
+	// TODO use StructField
+
 	mysqlinternals.Column
 	nameOverride string
+	skipData     bool
+	skipBind     bool
 }
 
-var gonameregexp *regexp.Regexp
-
-func init() {
-	r, err := regexp.Compile("[^A-Za-z0-9]*")
-	if err != nil {
-		panic(err)
-	}
-	gonameregexp = r
-}
+var gonameregexp = regexp.MustCompile("[^A-Za-z0-9]*")
 
 func (c TemplateColumn) Name() string {
 	name := c.Column.Name()
@@ -34,6 +31,10 @@ func (c TemplateColumn) Name() string {
 	return name
 }
 
+func (c TemplateColumn) Bindable() bool {
+	return !c.skipBind
+}
+
 func (c TemplateColumn) Goname() string {
 	return strings.Title(gonameregexp.ReplaceAllString(c.Name(), ""))
 }
@@ -41,8 +42,6 @@ func (c TemplateColumn) Goname() string {
 func (c TemplateColumn) Declaration() (decl string, err error) {
 	var sqlType string
 	switch c.MysqlParameters() {
-	case mysqlinternals.ParamOneOrMore:
-		sqlType = "#ENUM/SET#"
 	case mysqlinternals.ParamMustLength:
 		// should be varchar mostly
 		sqlType, err = c.MysqlDeclaration(255)
@@ -56,10 +55,20 @@ func (c TemplateColumn) Declaration() (decl string, err error) {
 	if c.nameOverride != "" {
 		name = "#" + c.nameOverride + "#"
 	}
-	postfix := fmt.Sprintf("`mysqlname:%q mysqltype:%q`", name, sqlType)
+	goname := c.Goname()
+	dataname := strings.ToLower(goname) + ",omitempty"
+	if c.skipData {
+		dataname = "-"
+	}
+	postfix := fmt.Sprintf(
+		"`mysql:\"%[1]s,%[2]s\" json:%[3]q xml:%[3]q`",
+		name,
+		sqlType,
+		dataname, //TODO differentiate between json / xml
+	)
 	goSafeType, err := c.ReflectSqlType(false)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s %s %s", c.Goname(), goSafeType, postfix), nil
+	return fmt.Sprintf("%s %s %s", goname, goSafeType, postfix), nil
 }

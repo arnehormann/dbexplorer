@@ -3,9 +3,10 @@ package generator
 import (
 	"database/sql"
 	"fmt"
-	"github.com/arnehormann/sqlinternals/mysqlinternals"
 	"reflect"
 	"strings"
+
+	"github.com/arnehormann/sqlinternals/mysqlinternals"
 )
 
 type structFeeder func(t []interface{}) interface{}

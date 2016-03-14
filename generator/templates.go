@@ -33,11 +33,11 @@ type ~.Name~ struct {~range $i, $e := .Cols~
 }
 
 // Bind returns a slice of all columns for a ~.Name~ to use it with Scan.
-// Bind only one ~.Name~ and copy it every row after calling Scan.
+// Bind only one ~.Name~, reuse the []interface{} and store a copy after calling Scan.
 func (v *~.Name~) Bind() (cols []interface{}) {
 	return []interface{}{
-	~range $i, $e := .Cols~	&v.~$e.Goname~,
-	~end~}
+	~range $i, $e := .Cols~~if $e.Bindable~	&v.~$e.Goname~,
+	~end~~end~}
 }
 
 // copy returns a shallow copy of the ~.Name~.

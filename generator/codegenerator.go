@@ -11,15 +11,15 @@ import (
 type marker map[string]struct{}
 
 func (mark *marker) Generate(writer io.Writer, db *sql.DB, query Query) error {
+	var exists struct{}
 	name, ok := query.StructName()
 	if !ok {
 		return fmt.Errorf("No struct name in query %#v", query)
 	}
-	_, known := (*mark)[name]
-	if known {
+	if _, known := (*mark)[name]; known {
 		return fmt.Errorf("Type %s was already declared", name)
 	}
-	(*mark)[name] = struct{}{}
+	(*mark)[name] = exists
 	templ, err := template.New(name).Delims("~", "~").Parse(structTemplate)
 	if err != nil {
 		return err
@@ -39,7 +39,6 @@ func (mark *marker) Generate(writer io.Writer, db *sql.DB, query Query) error {
 	overrides := query.Overrides()
 	cols := make([]TemplateColumn, len(resp.columns))
 	for i, c := range resp.columns {
-		// TODO: consider overrides here
 		cols[i] = TemplateColumn{Column: c}
 		if v, ok := overrides[i]; ok {
 			cols[i].nameOverride = v

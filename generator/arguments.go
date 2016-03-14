@@ -5,6 +5,9 @@ import (
 	"strconv"
 )
 
+// Map provides a name for a field in a scope ("go", "mysql", "json", "xml").
+type Map func(name string, scope string) string
+
 // Arg represents an argument in a MySQL query
 type Arg struct {
 	// argument name
@@ -24,6 +27,8 @@ type Arg struct {
 	Values    map[string]interface{}
 	// description
 	Comment string
+	// name mapping
+	Map Map // TODO: unused so far
 }
 
 // Arglist represents a sequence of arguments

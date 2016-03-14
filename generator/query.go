@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 )
 
@@ -45,8 +46,10 @@ func (q Query) Sample() (string, error) {
 			} else {
 				sql += v.Sample
 			}
-		case map[interface{}]string, map[int]string:
-			// ignore, it's an override map for column names (from int or string)
+		case reflect.StructField:
+			// ignore, it's an DB-invisible field
+		case Map, map[string]string, map[int]string:
+			// ignore, it's an override map for field names (maps: from index or column name)
 		default:
 			return sql, fmt.Errorf("type %T of argument %d is not supported", part, i)
 		}
@@ -65,13 +68,9 @@ func (q Query) Args() Arglist {
 	return args
 }
 
-// this may break with bad quoting, but the user can influence the breakage
-// and it's not at runtime so there's little risk
 func (q Query) String() string {
-	type staticArg struct {
-		pos  int
-		name string
-	}
+	// code below may break with bad quoting, but the user can influence the breakage
+	// and it's not at runtime so there is little risk
 	query := `"`
 	argMap := make(map[string]int)
 	for _, part := range q[1:] {
@@ -79,12 +78,13 @@ func (q Query) String() string {
 		case string:
 			query += v
 		case *Arg:
-			switch {
-			case v.Dynamic && v.Quoted:
-				query += `'?'`
-			case v.Dynamic && !v.Quoted:
-				query += `?`
-			default:
+			if v.Dynamic {
+				if v.Quoted {
+					query += `'?'`
+				} else {
+					query += `?`
+				}
+			} else {
 				idx, ok := argMap[v.Name]
 				if !ok {
 					idx = len(argMap)
@@ -104,5 +104,5 @@ func (q Query) Overrides() map[int]string {
 			return m
 		}
 	}
-	return map[int]string{}
+	return nil
 }
