@@ -23,6 +23,8 @@ func appendMystruct(dest []*Mystruct, db *sql.DB) []*Mystruct {
 	if err != nil {
 		panic(err) // TODO fix
 	}
+	defer rows.Close() // TODO check error...
+
 	for rows.Next() {
 		err = rows.Scan(dest...)
 		if err != nil {
@@ -32,6 +34,9 @@ func appendMystruct(dest []*Mystruct, db *sql.DB) []*Mystruct {
 		// copy() creates a shallow copy of the bound struct.
 		// Doing it this way means the interface slide has to be created only once.
 		dest = append(dest, bound.copy())
+	}
+	if err = rows.Err(); err != nil {
+		panic(err) // TODO fix
 	}
 	return dest
 }
