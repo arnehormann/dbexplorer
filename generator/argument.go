@@ -11,24 +11,22 @@ type Map func(name string, scope string) string
 // Arg represents an argument in a MySQL query
 type Arg struct {
 	// argument name
-	Name string
+	Name string `json:"name"`
 	// argument value for sample query
-	Sample string
+	Sample string `json:"example"`
 	// Dynamic arguments become "?" in the query and are provided at runtime.
 	// Static arguments are identifiers and have to be known at query construction time
 	// (e.g. table and schema name)
-	Dynamic bool
+	Dynamic bool `json:"dynamic,omitempty"`
 	// argument should be quoted
-	Quoted bool
+	Quoted bool `json:"quote,omitempty"`
 	// argument type (string by default)
-	Type reflect.Type
+	Type reflect.Type `json:"-"`
 	// alternatives
-	ValueType interface{}
-	Values    map[string]interface{}
+	ValueType interface{}            `json:"-"`
+	Values    map[string]interface{} `json:"-"`
 	// description
-	Comment string
-	// name mapping
-	Map Map // TODO: unused so far
+	Comment string `json:"-"`
 }
 
 // Arglist represents a sequence of arguments

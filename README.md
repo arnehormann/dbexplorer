@@ -32,7 +32,7 @@ func appendMystruct(dest []*Mystruct, db *sql.DB) []*Mystruct {
 		}
 
 		// copy() creates a shallow copy of the bound struct.
-		// Doing it this way means the interface slide has to be created only once.
+		// Doing it this way means the interface slice has to be created only once.
 		dest = append(dest, bound.copy())
 	}
 	if err = rows.Err(); err != nil {

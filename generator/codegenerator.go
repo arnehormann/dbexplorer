@@ -10,6 +10,8 @@ import (
 // store names of generated structs (Arg.Name, Arg.ValueType)
 type marker map[string]struct{}
 
+var structTmpl = template.Must(template.New("mysqlStruct").Delims("~", "~").Parse(structTemplate))
+
 func (mark *marker) Generate(writer io.Writer, db *sql.DB, query Query) error {
 	var exists struct{}
 	name, ok := query.StructName()
@@ -20,10 +22,6 @@ func (mark *marker) Generate(writer io.Writer, db *sql.DB, query Query) error {
 		return fmt.Errorf("Type %s was already declared", name)
 	}
 	(*mark)[name] = exists
-	templ, err := template.New(name).Delims("~", "~").Parse(structTemplate)
-	if err != nil {
-		return err
-	}
 	sql, err := query.Sample()
 	if err != nil {
 		return err
@@ -36,15 +34,13 @@ func (mark *marker) Generate(writer io.Writer, db *sql.DB, query Query) error {
 	if err != nil {
 		return err
 	}
-	overrides := query.Overrides()
+	overrides := query.Overrides(len(resp.columns))
 	cols := make([]TemplateColumn, len(resp.columns))
 	for i, c := range resp.columns {
 		cols[i] = TemplateColumn{Column: c}
-		if v, ok := overrides[i]; ok {
-			cols[i].nameOverride = v
-		}
+		cols[i].nameOverride = overrides[i]
 	}
-	return templ.Execute(writer, struct {
+	return structTmpl.Execute(writer, struct {
 		Name  string
 		Query Query
 		Cols  []TemplateColumn

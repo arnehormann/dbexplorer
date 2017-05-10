@@ -21,14 +21,13 @@ type TemplateColumn struct {
 	skipBind     bool
 }
 
-var gonameregexp = regexp.MustCompile("[^A-Za-z0-9]*")
+var goID = regexp.MustCompile("[^A-Za-z0-9]*")
 
 func (c TemplateColumn) Name() string {
-	name := c.Column.Name()
 	if c.nameOverride != "" {
-		name = c.nameOverride
+		return c.nameOverride
 	}
-	return name
+	return c.Column.Name()
 }
 
 func (c TemplateColumn) Bindable() bool {
@@ -36,7 +35,11 @@ func (c TemplateColumn) Bindable() bool {
 }
 
 func (c TemplateColumn) Goname() string {
-	return strings.Title(gonameregexp.ReplaceAllString(c.Name(), ""))
+	parts := strings.Split(c.Name(), "_")
+	for i := range parts {
+		parts[i] = strings.Title(parts[i])
+	}
+	return goID.ReplaceAllString(strings.Join(parts, ""), "")
 }
 
 func (c TemplateColumn) Declaration() (decl string, err error) {
@@ -53,22 +56,19 @@ func (c TemplateColumn) Declaration() (decl string, err error) {
 	}
 	name := c.Name()
 	if c.nameOverride != "" {
-		name = "#" + c.nameOverride + "#"
+		name = c.nameOverride
 	}
 	goname := c.Goname()
 	dataname := strings.ToLower(goname) + ",omitempty"
 	if c.skipData {
 		dataname = "-"
 	}
-	postfix := fmt.Sprintf(
-		"`mysql:\"%[1]s,%[2]s\" json:%[3]q xml:%[3]q`",
-		name,
-		sqlType,
-		dataname, //TODO differentiate between json / xml
-	)
 	goSafeType, err := c.ReflectSqlType(false)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s %s %s", goname, goSafeType, postfix), nil
+	return fmt.Sprintf(
+		"%[1]s %[2]s `mysql:\"%[3]s,%[4]s\" json:%[5]q xml:%[5]q`",
+		goname, goSafeType, name, sqlType, dataname,
+	), nil
 }

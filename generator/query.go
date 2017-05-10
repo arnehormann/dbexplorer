@@ -3,7 +3,6 @@ package generator
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 )
 
 // Query represents a Query a struct should be generated for.
@@ -12,14 +11,6 @@ import (
 // field names of the respective column indices.
 // Following that are parts of the SQL (string) and Arg or *Arg (parameters).
 type Query []interface{}
-
-func init() {
-	r, err := regexp.Compile("[^A-Za-z0-9]*")
-	if err != nil {
-		panic(err)
-	}
-	gonameregexp = r
-}
 
 // SQL provides a simple routine to create a Query
 func SQL(structName string, parts ...interface{}) Query {
@@ -48,8 +39,8 @@ func (q Query) Sample() (string, error) {
 			}
 		case reflect.StructField:
 			// ignore, it's an DB-invisible field
-		case Map, map[string]string, map[int]string:
-			// ignore, it's an override map for field names (maps: from index or column name)
+		case Map, []string, map[string]string, map[int]string:
+			// ignore, it's an override mapping from column names to field names (maps: from index or column name)
 		default:
 			return sql, fmt.Errorf("type %T of argument %d is not supported", part, i)
 		}
@@ -92,17 +83,30 @@ func (q Query) String() string {
 				}
 				query += fmt.Sprintf(`" + %s + "`, v.Name)
 			}
+		default:
+			// columnd to field name mapping
+			continue
 		}
 	}
 	query += `"`
 	return query
 }
 
-func (q Query) Overrides() map[int]string {
+func (q Query) Overrides(numCols int) []string {
 	for _, v := range q[1:] {
-		if m, ok := v.(map[int]string); ok {
-			return m
+		switch mv := v.(type) {
+		case []string:
+			if numCols != len(mv) {
+				panic("bad overrides for query " + q.String())
+			}
+			return mv
+		case map[int]string:
+			overrides := make([]string, numCols)
+			for i, v := range mv {
+				overrides[i] = v
+			}
+			return overrides
 		}
 	}
-	return nil
+	return make([]string, numCols)
 }
